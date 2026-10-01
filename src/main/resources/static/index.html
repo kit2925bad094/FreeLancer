@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FreelanceHub - Connect. Create. Collaborate.</title>
+    <meta name="description" content="Production-grade Full-Stack Freelancer Project Management System built with Spring Boot, JDBC, and modern SaaS UI.">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Chart.js for Admin & Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+    <!-- ========================================================
+         TOP NAVIGATION BAR
+         ======================================================== -->
+    <header class="navbar">
+        <div class="container nav-container">
+            <!-- Brand Logo -->
+            <div class="brand" onclick="app.navigate('home')">
+                <div class="brand-icon">
+                    <i class="fa-solid fa-cube"></i>
+                </div>
+                <div class="brand-text">
+                    <h1>FreelanceHub</h1>
+                    <p>Connect. Create. Collaborate.</p>
+                </div>
+            </div>
+
+            <!-- Nav Links -->
+            <ul class="nav-links">
+                <li><a href="#home" class="nav-link active" data-page="home"><i class="fa-solid fa-house"></i> Home</a></li>
+                <li><a href="#projects" class="nav-link" data-page="projects"><i class="fa-solid fa-briefcase"></i> Browse Projects</a></li>
+                <li><a href="#freelancers" class="nav-link" data-page="freelancers"><i class="fa-solid fa-users"></i> Freelancers</a></li>
+                <li id="nav-dashboard-li" style="display: none;">
+                    <a href="#dashboard" class="nav-link" data-page="dashboard"><i class="fa-solid fa-chart-line"></i> Dashboard</a>
+                </li>
+            </ul>
+
+            <!-- Actions: Dark/Light, Notifications, Role-based Auth CTAs -->
+            <div class="nav-actions">
+                <!-- Theme Toggle -->
+                <button class="btn-icon" id="theme-toggle-btn" title="Toggle Light / Dark mode">
+                    <i class="fa-solid fa-sun" id="theme-icon"></i>
+                </button>
+
+                <!-- Notifications Dropdown (When Logged In) -->
+                <div style="position: relative; display: none;" id="notif-wrapper">
+                    <button class="btn-icon" id="notif-btn" title="Notifications">
+                        <i class="fa-solid fa-bell"></i>
+                        <span class="notification-badge" id="notif-badge" style="display: none;">0</span>
+                    </button>
+                    <!-- Notification Popup -->
+                    <div class="dropdown-menu" id="notif-dropdown">
+                        <div class="dropdown-header">
+                            <span class="dropdown-title">Notifications</span>
+                            <button class="btn-sm btn-outline" onclick="app.markAllNotificationsRead()" style="padding: 0.2rem 0.5rem; font-size: 0.72rem;">Mark all as read</button>
+                        </div>
+                        <div class="notif-list" id="notif-list">
+                            <div style="text-align: center; padding: 1.5rem; color: var(--text-muted);">
+                                No new notifications
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Client Quick Post Project Action -->
+                <div id="nav-post-project-btn" style="display: none;">
+                    <button class="btn btn-primary btn-sm" onclick="app.handlePostProjectClick()">
+                        <i class="fa-solid fa-plus"></i> Post Project
+                    </button>
+                </div>
+
+                <!-- User Session Menu / Guest Login CTA -->
+                <div id="auth-buttons-container" style="display: flex; gap: 0.5rem; align-items: center;">
+                    <button class="btn btn-outline btn-sm" onclick="app.openLoginModal('FREELANCER')">
+                        <i class="fa-solid fa-right-to-bracket"></i> Sign In
+                    </button>
+                    <button class="btn btn-primary btn-sm" onclick="app.openRegisterModal('FREELANCER')">
+                        <i class="fa-solid fa-code"></i> Join as Freelancer
+                    </button>
+                    <button class="btn btn-secondary btn-sm" onclick="app.openRegisterModal('CLIENT')">
+                        <i class="fa-solid fa-briefcase"></i> Hire as Client
+                    </button>
+                </div>
+
+                <div id="user-menu-container" style="display: none; position: relative;">
+                    <div class="user-profile-btn" id="user-dropdown-btn">
+                        <img alt="" class="user-avatar" id="nav-user-avatar" style="display: none;">
+                        <div class="user-info">
+                            <div class="user-name" id="nav-user-name">User Name</div>
+                            <span class="user-role-badge badge-freelancer" id="nav-user-role">FREELANCER</span>
+                        </div>
+                        <i class="fa-solid fa-chevron-down" style="font-size: 0.7rem; color: var(--text-muted); margin-left: 0.25rem;"></i>
+                    </div>
+
+                    <!-- User Dropdown Menu -->
+                    <div class="dropdown-menu" id="user-dropdown" style="width: 220px; right: 0;">
+                        <a href="javascript:void(0)" onclick="app.goToMyDashboard()" class="sidebar-link">
+                            <i class="fa-solid fa-gauge"></i> My Dashboard
+                        </a>
+                        <a href="javascript:void(0)" onclick="app.viewMyProfile()" class="sidebar-link">
+                            <i class="fa-solid fa-user-circle"></i> View Profile
+                        </a>
+                        <div style="border-top: 1px solid var(--border-color); margin: 0.5rem 0;"></div>
+                        <a href="javascript:void(0)" onclick="app.logout()" class="sidebar-link" style="color: var(--danger);">
+                            <i class="fa-solid fa-right-from-bracket"></i> Sign Out
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Mobile Menu Button -->
+                <button class="btn-icon menu-toggle" id="mobile-menu-btn">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- ========================================================
+         MAIN CONTENT VIEWS
+         ======================================================== -->
+    <main style="flex: 1;">
+
+        <!-- 1. LANDING PAGE VIEW -->
+        <section id="home-view" class="page-view">
+            <!-- Hero -->
+            <div class="hero-section">
+                <div class="container hero-content">
+                    <div class="hero-pill">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> Next-Gen Freelance Marketplace & Project Management
+                    </div>
+                    <h1 class="hero-title">
+                        Connect. Create. <br><span style="background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Collaborate.</span>
+                    </h1>
+                    <p class="hero-subtitle">
+                        Find the right expert freelancer or launch high-impact projects. End-to-end milestone tracking, intelligent skill matching, and real-time collaboration.
+                    </p>
+                    <div class="hero-actions" style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                        <button class="btn btn-primary btn-lg" onclick="app.navigate('projects')">
+                            <i class="fa-solid fa-magnifying-glass"></i> Explore Projects
+                        </button>
+                        <button class="btn btn-outline btn-lg" onclick="app.openRegisterModal('FREELANCER')">
+                            <i class="fa-solid fa-code"></i> Join as Freelancer
+                        </button>
+                        <button class="btn btn-secondary btn-lg" onclick="app.openRegisterModal('CLIENT')">
+                            <i class="fa-solid fa-briefcase"></i> Hire as Client
+                        </button>
+                    </div>
+
+                    <!-- Dynamic Backend Stats Cards (Section 10) -->
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-number" id="stat-freelancers">0</div>
+                            <div class="stat-label">Active Freelancers</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="stat-projects">0</div>
+                            <div class="stat-label">Posted Projects</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="stat-completed">0</div>
+                            <div class="stat-label">Completed Projects</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="stat-clients">0</div>
+                            <div class="stat-label">Trusted Clients</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Features / Trending Categories -->
+            <div class="container" style="padding: 4rem 1.5rem;">
+                <div style="display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 2rem;">
+                    <div>
+                        <h2 style="font-size: 1.85rem; margin-bottom: 0.5rem;">Featured Opportunities</h2>
+                        <p style="color: var(--text-secondary);">Explore curated high-budget projects ready for top developers</p>
+                    </div>
+                    <button class="btn btn-outline" onclick="app.navigate('projects')">View All Projects <i class="fa-solid fa-arrow-right"></i></button>
+                </div>
+                <div class="projects-grid" id="home-featured-projects">
+                    <!-- Loaded dynamically via JavaScript -->
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. PROJECTS MARKETPLACE VIEW -->
+        <section id="projects-view" class="page-view" style="display: none; padding: 2.5rem 0;">
+            <div class="container">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+                    <div>
+                        <h1 style="font-size: 2rem; margin-bottom: 0.35rem;">Projects Marketplace</h1>
+                        <p style="color: var(--text-secondary);">Browse open client contracts, compare skill requirements, and submit competitive proposals.</p>
+                    </div>
+                    <div>
+                        <button class="btn btn-primary" onclick="app.handlePostProjectClick()">
+                            <i class="fa-solid fa-plus"></i> Post a Project
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Search and Filters (Section 11, 24) -->
+                <div class="search-filter-box">
+                    <div class="filter-row">
+                        <!-- Global Search Input -->
+                        <div class="search-input-wrapper">
+                            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                            <input type="text" class="form-control" id="search-query-input" placeholder="Search projects by title, description, company..." oninput="app.debounceSearch()">
+                        </div>
+
+                        <!-- Category Filter -->
+                        <select class="form-control filter-select" id="filter-category" onchange="app.loadProjects()">
+                            <option value="ALL">All Categories</option>
+                            <option value="Artificial Intelligence">Artificial Intelligence</option>
+                            <option value="Machine Learning">Machine Learning</option>
+                            <option value="Backend Development">Backend Development</option>
+                            <option value="Web Development">Web Development</option>
+                            <option value="Mobile Development">Mobile Development</option>
+                            <option value="UI/UX Design">UI/UX Design</option>
+                        </select>
+
+                        <!-- Skill Filter -->
+                        <select class="form-control filter-select" id="filter-skill" onchange="app.loadProjects()">
+                            <option value="">All Skills</option>
+                            <!-- Populated via API -->
+                        </select>
+
+                        <!-- Status Filter -->
+                        <select class="form-control filter-select" id="filter-status" onchange="app.loadProjects()">
+                            <option value="ALL">All Statuses</option>
+                            <option value="OPEN" selected>Open Only</option>
+                            <option value="ASSIGNED">Assigned</option>
+                            <option value="IN_PROGRESS">In Progress</option>
+                            <option value="COMPLETED">Completed</option>
+                        </select>
+
+                        <!-- Sort Dropdown -->
+                        <select class="form-control filter-select" id="filter-sort" onchange="app.loadProjects()">
+                            <option value="newest">Sort: Newest</option>
+                            <option value="budget_desc">Budget: High to Low</option>
+                            <option value="budget_asc">Budget: Low to High</option>
+                            <option value="deadline">Urgent Deadline</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Projects Cards Grid -->
+                <div class="projects-grid" id="projects-list-container">
+                    <!-- Populated via REST API -->
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. PROJECT DETAILS VIEW (Section 12, 22, 23) -->
+        <section id="project-details-view" class="page-view" style="display: none; padding: 2.5rem 0;">
+            <div class="container" style="max-width: 1040px;">
+                <div style="margin-bottom: 1.5rem;">
+                    <a href="javascript:void(0)" onclick="app.navigate('projects')" style="display: inline-flex; align-items: center; gap: 0.4rem; font-weight: 600;">
+                        <i class="fa-solid fa-arrow-left"></i> Back to Marketplace
+                    </a>
+                </div>
+
+                <div class="card" style="padding: 2rem; margin-bottom: 2rem;" id="project-details-card">
+                    <!-- Populated dynamically via JavaScript -->
+                </div>
+
+                <!-- Project Timeline / Status Stepper (Section 23) -->
+                <div class="card" style="padding: 2rem; margin-bottom: 2rem;">
+                    <h3 style="font-size: 1.15rem; margin-bottom: 0.5rem;"><i class="fa-solid fa-timeline"></i> Project Lifecycle Progression</h3>
+                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1.5rem;">Verified status transition workflow according to system state rules.</p>
+                    <div class="timeline-stepper" id="project-timeline-stepper">
+                        <!-- Rendered dynamically -->
+                    </div>
+                </div>
+
+                <!-- Project Collaboration / Chat & Reviews Section -->
+                <div class="card" style="padding: 2rem;" id="project-collab-section">
+                    <!-- Chat / Reviews depending on status -->
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. FREELANCERS DIRECTORY VIEW -->
+        <section id="freelancers-view" class="page-view" style="display: none; padding: 2.5rem 0;">
+            <div class="container">
+                <div style="margin-bottom: 2rem;">
+                    <h1 style="font-size: 2rem; margin-bottom: 0.35rem;">Top Freelancers & Engineers</h1>
+                    <p style="color: var(--text-secondary);">Browse certified engineers, AI researchers, and UI/UX designers ready to join your projects.</p>
+                </div>
+
+                <div class="search-filter-box">
+                    <div class="filter-row">
+                        <div class="search-input-wrapper">
+                            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                            <input type="text" class="form-control" id="search-freelancer-input" placeholder="Search by name, headline, bio..." oninput="app.debounceFreelancers()">
+                        </div>
+                        <select class="form-control filter-select" id="filter-freelancer-skill" onchange="app.loadFreelancers()">
+                            <option value="">Filter by Skill</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="projects-grid" id="freelancers-list-container">
+                    <!-- Populated via API -->
+                </div>
+            </div>
+        </section>
+
+        <!-- 5. FREELANCER DASHBOARD VIEW (Section 15) -->
+        <section id="freelancer-dashboard-view" class="page-view" style="display: none; padding: 2rem 0;">
+            <div class="container">
+                <div class="dashboard-layout">
+                    <!-- Sidebar -->
+                    <aside class="sidebar">
+                        <div class="sidebar-sticky">
+                            <div class="sidebar-user">
+                                <img alt="" class="sidebar-avatar" id="fl-dash-avatar" style="display: none;">
+                                <h3 style="font-size: 1rem;" id="fl-dash-name">Manoj M R</h3>
+                                <p style="font-size: 0.75rem; color: var(--text-muted);" id="fl-dash-headline">AI & Full Stack</p>
+                            </div>
+                            <ul class="sidebar-menu">
+                                <li class="sidebar-item"><a href="javascript:void(0)" class="sidebar-link active"><i class="fa-solid fa-gauge"></i> Overview</a></li>
+                                <li class="sidebar-item"><a href="javascript:void(0)" onclick="app.navigate('projects')" class="sidebar-link"><i class="fa-solid fa-magnifying-glass"></i> Explore Projects</a></li>
+                                <li class="sidebar-item"><a href="javascript:void(0)" onclick="app.viewMyProfile()" class="sidebar-link"><i class="fa-solid fa-user-pen"></i> Edit Profile</a></li>
+                            </ul>
+                        </div>
+                    </aside>
+
+                    <!-- Main Dashboard Content -->
+                    <div class="dashboard-main">
+                        <div style="margin-bottom: 1.75rem;">
+                            <h1 style="font-size: 1.85rem;" id="fl-dash-welcome">Welcome back, Manoj 👋</h1>
+                            <p style="color: var(--text-secondary);">Here is a summary of your active proposals, assignments, and earnings.</p>
+                        </div>
+
+                        <!-- 4 Metric Cards -->
+                        <div class="kpi-grid">
+                            <div class="kpi-card">
+                                <div class="kpi-icon" style="background: var(--info-light); color: var(--info);">
+                                    <i class="fa-solid fa-paper-plane"></i>
+                                </div>
+                                <div class="kpi-info">
+                                    <h4>Applied Projects</h4>
+                                    <div class="kpi-val" id="fl-kpi-applied">0</div>
+                                </div>
+                            </div>
+                            <div class="kpi-card">
+                                <div class="kpi-icon" style="background: var(--primary-light); color: var(--primary);">
+                                    <i class="fa-solid fa-spinner"></i>
+                                </div>
+                                <div class="kpi-info">
+                                    <h4>Active Projects</h4>
+                                    <div class="kpi-val" id="fl-kpi-active">0</div>
+                                </div>
+                            </div>
+                            <div class="kpi-card">
+                                <div class="kpi-icon" style="background: var(--success-light); color: var(--success);">
+                                    <i class="fa-solid fa-circle-check"></i>
+                                </div>
+                                <div class="kpi-info">
+                                    <h4>Completed</h4>
+                                    <div class="kpi-val" id="fl-kpi-completed">0</div>
+                                </div>
+                            </div>
+                            <div class="kpi-card">
+                                <div class="kpi-icon" style="background: var(--warning-light); color: var(--warning);">
+                                    <i class="fa-solid fa-indian-rupee-sign"></i>
+                                </div>
+                                <div class="kpi-info">
+                                    <h4>Total Earnings</h4>
+                                    <div class="kpi-val" id="fl-kpi-earnings">₹0</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- My Active Projects with Progress Bars (Section 15) -->
+                        <div class="card" style="padding: 1.5rem; margin-bottom: 2rem;">
+                            <h3 style="font-size: 1.15rem; margin-bottom: 1.25rem;"><i class="fa-solid fa-diagram-project"></i> My Active Projects</h3>
+                            <div id="fl-active-projects-list">
+                                <!-- Populated dynamically -->
+                            </div>
+                        </div>
+
+                        <!-- My Applications Tracker -->
+                        <div class="card" style="padding: 1.5rem;">
+                            <h3 style="font-size: 1.15rem; margin-bottom: 1.25rem;"><i class="fa-solid fa-list-check"></i> Application History</h3>
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Project</th>
+                                            <th>Proposed Budget</th>
+                                            <th>Est. Delivery</th>
+                                            <th>Skill Match</th>
+                                            <th>Status</th>
+                                            <th>Date</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="fl-applications-tbody">
+                                        <!-- Loaded dynamically -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 6. CLIENT DASHBOARD VIEW (Section 16) -->
+        <section id="client-dashboard-view" class="page-view" style="display: none; padding: 2rem 0;">
+            <div class="container">
+                <div class="dashboard-layout">
+                    <!-- Client Sidebar -->
+                    <aside class="sidebar">
+                        <div class="sidebar-sticky">
+                            <div class="sidebar-user">
+                                <img alt="" class="sidebar-avatar" id="client-dash-avatar" style="display: none;">
+                                <h3 style="font-size: 1rem;" id="client-dash-company">Company Name</h3>
+                                <p style="font-size: 0.75rem; color: var(--text-muted);" id="client-dash-contact">Contact Person</p>
+                            </div>
+                            <ul class="sidebar-menu">
+                                <li class="sidebar-item"><a href="javascript:void(0)" class="sidebar-link active"><i class="fa-solid fa-gauge"></i> Projects Overview</a></li>
+                                <li class="sidebar-item"><a href="javascript:void(0)" onclick="app.showModal('create-project-modal')" class="sidebar-link"><i class="fa-solid fa-plus-circle"></i> Post New Project</a></li>
+                                <li class="sidebar-item"><a href="javascript:void(0)" onclick="app.navigate('freelancers')" class="sidebar-link"><i class="fa-solid fa-users"></i> Search Freelancers</a></li>
+                            </ul>
+                        </div>
+                    </aside>
+
+                    <!-- Client Main Content -->
+                    <div class="dashboard-main">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.75rem; flex-wrap: wrap; gap: 1rem;">
+                            <div>
+                                <h1 style="font-size: 1.85rem;" id="client-dash-welcome">Welcome back, Apex Technologies 🏢</h1>
+                                <p style="color: var(--text-secondary);">Manage your project listings, review applicants, and track deliverable milestones.</p>
+                            </div>
+                            <button class="btn btn-primary" onclick="app.showModal('create-project-modal')">
+                                <i class="fa-solid fa-plus"></i> Post New Project
+                            </button>
+                        </div>
+
+                        <!-- KPI Grid -->
+                        <div class="kpi-grid">
+                            <div class="kpi-card">
+                                <div class="kpi-icon" style="background: var(--primary-light); color: var(--primary);">
+                                    <i class="fa-solid fa-briefcase"></i>
+                                </div>
+                                <div class="kpi-info">
+                                    <h4>Total Projects</h4>
+                                    <div class="kpi-val" id="client-kpi-total">0</div>
+                                </div>
+                            </div>
+                            <div class="kpi-card">
+                                <div class="kpi-icon" style="background: var(--success-light); color: var(--success);">
+                                    <i class="fa-solid fa-door-open"></i>
+                                </div>
+                                <div class="kpi-info">
+                                    <h4>Open</h4>
+                                    <div class="kpi-val" id="client-kpi-open">0</div>
+                                </div>
+                            </div>
+                            <div class="kpi-card">
+                                <div class="kpi-icon" style="background: var(--info-light); color: var(--info);">
+                                    <i class="fa-solid fa-gears"></i>
+                                </div>
+                                <div class="kpi-info">
+                                    <h4>In Progress</h4>
+                                    <div class="kpi-val" id="client-kpi-inprogress">0</div>
+                                </div>
+                            </div>
+                            <div class="kpi-card">
+                                <div class="kpi-icon" style="background: var(--warning-light); color: var(--warning);">
+                                    <i class="fa-solid fa-indian-rupee-sign"></i>
+                                </div>
+                                <div class="kpi-info">
+                                    <h4>Total Spent</h4>
+                                    <div class="kpi-val" id="client-kpi-spent">₹0</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- My Projects Table -->
+                        <div class="card" style="padding: 1.5rem; margin-bottom: 2rem;">
+                            <h3 style="font-size: 1.15rem; margin-bottom: 1.25rem;"><i class="fa-solid fa-folder-open"></i> My Project Listings</h3>
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Title</th>
+                                            <th>Budget Range</th>
+                                            <th>Deadline</th>
+                                            <th>Applicants</th>
+                                            <th>Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="client-projects-tbody">
+                                        <!-- Loaded dynamically -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Recent Applicants Stream (Section 14, 16) -->
+                        <div class="card" style="padding: 1.5rem;">
+                            <h3 style="font-size: 1.15rem; margin-bottom: 1.25rem;"><i class="fa-solid fa-user-check"></i> Recent Candidate Applications</h3>
+                            <div id="client-recent-applicants-stream">
+                                <!-- Loaded dynamically -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 7. ADMIN DASHBOARD VIEW (Section 17) -->
+        <section id="admin-dashboard-view" class="page-view" style="display: none; padding: 2rem 0;">
+            <div class="container">
+                <div style="margin-bottom: 2rem;">
+                    <h1 style="font-size: 2rem; margin-bottom: 0.35rem;">Platform Administration & Analytics</h1>
+                    <p style="color: var(--text-secondary);">Real-time system monitoring, user moderation, Chart.js visual telemetry, and compliance.</p>
+                </div>
+
+                <!-- Admin KPI Cards -->
+                <div class="kpi-grid">
+                    <div class="kpi-card">
+                        <div class="kpi-icon" style="background: var(--primary-light); color: var(--primary);"><i class="fa-solid fa-users"></i></div>
+                        <div class="kpi-info"><h4>Total Users</h4><div class="kpi-val" id="admin-kpi-users">0</div></div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon" style="background: var(--info-light); color: var(--info);"><i class="fa-solid fa-code"></i></div>
+                        <div class="kpi-info"><h4>Freelancers</h4><div class="kpi-val" id="admin-kpi-freelancers">0</div></div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon" style="background: var(--success-light); color: var(--success);"><i class="fa-solid fa-building"></i></div>
+                        <div class="kpi-info"><h4>Clients</h4><div class="kpi-val" id="admin-kpi-clients">0</div></div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon" style="background: var(--warning-light); color: var(--warning);"><i class="fa-solid fa-briefcase"></i></div>
+                        <div class="kpi-info"><h4>Total Projects</h4><div class="kpi-val" id="admin-kpi-projects">0</div></div>
+                    </div>
+                </div>
+
+                <!-- Chart.js Charts Grid (Section 17) -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+                    <div class="card" style="padding: 1.5rem;">
+                        <h4 style="font-size: 1rem; margin-bottom: 1rem;"><i class="fa-solid fa-chart-pie"></i> Projects by Status</h4>
+                        <div style="height: 250px; position: relative;">
+                            <canvas id="chartProjectsByStatus"></canvas>
+                        </div>
+                    </div>
+                    <div class="card" style="padding: 1.5rem;">
+                        <h4 style="font-size: 1rem; margin-bottom: 1rem;"><i class="fa-solid fa-chart-pie"></i> Users by Role</h4>
+                        <div style="height: 250px; position: relative;">
+                            <canvas id="chartUsersByRole"></canvas>
+                        </div>
+                    </div>
+                    <div class="card" style="padding: 1.5rem;">
+                        <h4 style="font-size: 1rem; margin-bottom: 1rem;"><i class="fa-solid fa-chart-column"></i> Projects by Category</h4>
+                        <div style="height: 250px; position: relative;">
+                            <canvas id="chartProjectsByCategory"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- User Management Table -->
+                <div class="card" style="padding: 1.5rem; margin-bottom: 2rem;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
+                        <h3 style="font-size: 1.15rem;"><i class="fa-solid fa-user-shield"></i> User Moderation & Status</h3>
+                        <span class="skill-pill" id="admin-user-count">0 Users</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Role</th>
+                                    <th>Status</th>
+                                    <th>Registered</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-users-tbody">
+                                <!-- Loaded dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 8. USER PROFILE VIEW (Section 18) -->
+        <section id="profile-view" class="page-view" style="display: none; padding: 2.5rem 0;">
+            <div class="container" style="max-width: 900px;" id="profile-page-content">
+                <!-- Rendered dynamically -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ========================================================
+         FOOTER
+         ======================================================== -->
+    <footer style="background: var(--bg-card); border-top: 1px solid var(--border-color); padding: 3rem 0 1.5rem; margin-top: auto;">
+        <div class="container">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.5rem; padding-bottom: 2rem; border-bottom: 1px solid var(--border-color);">
+                <div class="brand">
+                    <div class="brand-icon"><i class="fa-solid fa-cube"></i></div>
+                    <div class="brand-text">
+                        <h1>FreelanceHub</h1>
+                        <p>Connect. Create. Collaborate.</p>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 1.5rem; font-size: 0.88rem; color: var(--text-secondary);">
+                    <span><i class="fa-solid fa-database"></i> Pure Spring Boot & JDBC</span>
+                    <span><i class="fa-solid fa-server"></i> MySQL Relational Persistence</span>
+                    <span><i class="fa-solid fa-layer-group"></i> Layered Architecture</span>
+                </div>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 1.5rem; font-size: 0.8rem; color: var(--text-muted); flex-wrap: wrap; gap: 1rem;">
+                <p>&copy; 2026 FreelanceHub. All rights reserved. Enterprise Project Management System.</p>
+                <p>Designed with rich modern aesthetics & dynamic full-stack reactivity.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ========================================================
+         MODALS
+         ======================================================== -->
+
+    <!-- 1. LOGIN MODAL -->
+    <div class="modal-overlay" id="login-modal">
+        <div class="modal" style="max-width: 480px;">
+            <div class="modal-header">
+                <div>
+                    <h3 style="font-size: 1.25rem;" id="login-modal-title">Sign In to FreelanceHub</h3>
+                    <p style="font-size: 0.8rem; color: var(--text-muted);">Registered email and password required to sign in</p>
+                </div>
+                <button class="modal-close" onclick="app.closeModal('login-modal')"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <!-- Role Switcher for Login -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.4rem; margin-bottom: 1.25rem;">
+                    <button type="button" class="btn btn-primary btn-sm" id="login-tab-freelancer" onclick="app.setLoginRole('FREELANCER')">
+                        <i class="fa-solid fa-code"></i> Freelancer
+                    </button>
+                    <button type="button" class="btn btn-outline btn-sm" id="login-tab-client" onclick="app.setLoginRole('CLIENT')">
+                        <i class="fa-solid fa-briefcase"></i> Client
+                    </button>
+                    <button type="button" class="btn btn-outline btn-sm" id="login-tab-admin" onclick="app.setLoginRole('ADMIN')">
+                        <i class="fa-solid fa-shield"></i> Admin
+                    </button>
+                </div>
+
+                <div id="login-role-hint" style="background: var(--bg-card-subtle); border-radius: var(--radius-sm); padding: 0.65rem 0.85rem; margin-bottom: 1rem; font-size: 0.82rem; color: var(--text-secondary); display: flex; align-items: center; gap: 0.5rem; border: 1px solid var(--border-color);">
+                    <i class="fa-solid fa-circle-info" style="color: var(--primary);"></i>
+                    <span id="login-role-hint-text">Sign in with your registered Freelancer account to apply for projects.</span>
+                </div>
+
+                <form id="login-form" onsubmit="app.handleLogin(event)">
+                    <div class="form-group">
+                        <label class="form-label">Registered Email Address</label>
+                        <input type="email" class="form-control" id="login-email" required placeholder="your.email@domain.com">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Password</label>
+                        <input type="password" class="form-control" id="login-password" required placeholder="••••••••">
+                    </div>
+                    <button type="submit" class="btn btn-primary" id="login-submit-btn" style="width: 100%; margin-top: 0.5rem;">
+                        <i class="fa-solid fa-right-to-bracket"></i> Sign In as Freelancer
+                    </button>
+                </form>
+            </div>
+            <div class="modal-footer" style="flex-direction: column; gap: 0.5rem; text-align: center;">
+                <p style="font-size: 0.82rem; color: var(--text-secondary); margin: 0;">
+                    Don't have an account yet? Register first:
+                </p>
+                <div style="display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap;">
+                    <a href="javascript:void(0)" onclick="app.closeModal('login-modal'); app.openRegisterModal('FREELANCER');" style="font-size: 0.84rem; font-weight: 600; color: var(--primary);">
+                        <i class="fa-solid fa-code"></i> Register as Freelancer
+                    </a>
+                    <span style="color: var(--border-color);">•</span>
+                    <a href="javascript:void(0)" onclick="app.closeModal('login-modal'); app.openRegisterModal('CLIENT');" style="font-size: 0.84rem; font-weight: 600; color: var(--accent);">
+                        <i class="fa-solid fa-briefcase"></i> Register as Client
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. REGISTER MODAL -->
+    <div class="modal-overlay" id="register-modal">
+        <div class="modal" style="max-width: 620px;">
+            <div class="modal-header">
+                <div>
+                    <h3 style="font-size: 1.25rem;" id="register-modal-title">Create Your Account</h3>
+                    <p style="font-size: 0.8rem; color: var(--text-muted);" id="register-modal-subtitle">Choose your account type to get started</p>
+                </div>
+                <button class="modal-close" onclick="app.closeModal('register-modal')"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <!-- Role Selector Tabs -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 1.25rem;">
+                    <button type="button" class="btn btn-primary" id="reg-tab-freelancer" onclick="app.setRegRole('FREELANCER')">
+                        <i class="fa-solid fa-code"></i> Work as Freelancer
+                    </button>
+                    <button type="button" class="btn btn-outline" id="reg-tab-client" onclick="app.setRegRole('CLIENT')">
+                        <i class="fa-solid fa-briefcase"></i> Hire as Client
+                    </button>
+                </div>
+
+                <form id="register-form" onsubmit="app.handleRegister(event)">
+                    <input type="hidden" id="reg-role" value="FREELANCER">
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" id="reg-name-label">Full Name</label>
+                            <input type="text" class="form-control" id="reg-name" required placeholder="e.g. John Doe">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Email Address</label>
+                            <input type="email" class="form-control" id="reg-email" required placeholder="john@example.com">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Password (min 6 characters)</label>
+                        <input type="password" class="form-control" id="reg-password" required minlength="6" placeholder="••••••••">
+                    </div>
+
+                    <!-- Freelancer Extra Fields -->
+                    <div id="reg-freelancer-fields">
+                        <div class="form-group">
+                            <label class="form-label">Professional Headline</label>
+                            <input type="text" class="form-control" id="reg-headline" placeholder="e.g. Senior Full-Stack Java & Cloud Architect">
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Hourly Rate (₹)</label>
+                                <input type="number" class="form-control" id="reg-rate" min="100" placeholder="1200">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Location / City</label>
+                                <input type="text" class="form-control" id="reg-location" placeholder="e.g. Bangalore, India">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Select Your Skills (Click to toggle)</label>
+                            <div class="skill-chips-container" id="reg-skill-chips">
+                                <!-- Populated dynamically from /api/skills -->
+                            </div>
+                            <input type="text" class="form-control" id="reg-skills" placeholder="Selected skills appear here (or type comma-separated)">
+                        </div>
+                    </div>
+
+                    <!-- Client Extra Fields -->
+                    <div id="reg-client-fields" style="display: none;">
+                        <div class="form-group">
+                            <label class="form-label">Company / Organization Name</label>
+                            <input type="text" class="form-control" id="reg-company" placeholder="e.g. Acme Innovations Ltd">
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Company Website</label>
+                                <input type="url" class="form-control" id="reg-website" placeholder="https://acme.com">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Location / City</label>
+                                <input type="text" class="form-control" id="reg-client-location" placeholder="e.g. Mumbai, India">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Company Description</label>
+                            <textarea class="form-control" id="reg-company-desc" rows="2" placeholder="Briefly describe what your organization does..."></textarea>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" id="reg-submit-btn" style="width: 100%; margin-top: 0.5rem;">
+                        <i class="fa-solid fa-user-check"></i> Register as Freelancer
+                    </button>
+                </form>
+            </div>
+            <div class="modal-footer" style="justify-content: center;">
+                <p style="font-size: 0.82rem; color: var(--text-secondary); margin: 0;">
+                    Already have an account? <a href="javascript:void(0)" onclick="app.closeModal('register-modal'); app.openLoginModal();">Sign In here</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. APPLY MODAL (Section 13) -->
+    <div class="modal-overlay" id="apply-modal">
+        <div class="modal" style="max-width: 520px;">
+            <div class="modal-header">
+                <div>
+                    <h3 style="font-size: 1.25rem;">Submit Project Proposal</h3>
+                    <p style="font-size: 0.8rem; color: var(--text-muted);" id="apply-modal-project-title">Project Title</p>
+                </div>
+                <button class="modal-close" onclick="app.closeModal('apply-modal')"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="apply-form" onsubmit="app.handleApply(event)">
+                    <input type="hidden" id="apply-project-id">
+
+                    <div class="form-group">
+                        <label class="form-label">Why are you suitable for this project?</label>
+                        <textarea class="form-control" id="apply-proposal" rows="4" required placeholder="Describe your relevant technical experience, similar past deliverables, and proposed architecture..."></textarea>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Proposed Budget (₹)</label>
+                            <input type="number" class="form-control" id="apply-budget" required min="1" placeholder="50000">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Estimated Completion (Days)</label>
+                            <input type="number" class="form-control" id="apply-days" required min="1" placeholder="14">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;">
+                        <i class="fa-solid fa-paper-plane"></i> Submit Application
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. POST PROJECT MODAL (Section 4, 16) -->
+    <div class="modal-overlay" id="create-project-modal">
+        <div class="modal" style="max-width: 640px;">
+            <div class="modal-header">
+                <h3 style="font-size: 1.25rem;">Post a New Project</h3>
+                <button class="modal-close" onclick="app.closeModal('create-project-modal')"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="create-project-form" onsubmit="app.handleCreateProject(event)">
+                    <div class="form-group">
+                        <label class="form-label">Project Title</label>
+                        <input type="text" class="form-control" id="new-project-title" required placeholder="e.g. Real-Time Cloud Telemetry Microservice">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Category</label>
+                            <select class="form-control" id="new-project-category" required>
+                                <option value="Web Development">Web Development</option>
+                                <option value="Backend Development">Backend Development</option>
+                                <option value="Mobile Development">Mobile Development</option>
+                                <option value="Artificial Intelligence">Artificial Intelligence</option>
+                                <option value="Machine Learning">Machine Learning</option>
+                                <option value="UI/UX Design">UI/UX Design</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Target Deadline</label>
+                            <input type="date" class="form-control" id="new-project-deadline" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Minimum Budget (₹)</label>
+                            <input type="number" class="form-control" id="new-project-budget-min" required min="1000" placeholder="30000">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Maximum Budget (₹)</label>
+                            <input type="number" class="form-control" id="new-project-budget-max" required min="1000" placeholder="60000">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Required Skills (Click to toggle or type below)</label>
+                        <div class="skill-chips-container" id="new-project-skill-chips"></div>
+                        <input type="text" class="form-control" id="new-project-skills" required placeholder="Selected skills appear here (e.g. Java, Spring Boot, MySQL)">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Project Description & Requirements</label>
+                        <textarea class="form-control" id="new-project-description" rows="4" required placeholder="Provide clear specifications, deliverables, and acceptance criteria..."></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">
+                        <i class="fa-solid fa-arrow-up-from-bracket"></i> Publish Project Listing
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. APPLICANTS COMPARISON MODAL (Section 14) -->
+    <div class="modal-overlay" id="applicants-modal">
+        <div class="modal" style="max-width: 780px;">
+            <div class="modal-header">
+                <div>
+                    <h3 style="font-size: 1.25rem;">Candidate Applicants Comparison</h3>
+                    <p style="font-size: 0.8rem; color: var(--text-muted);" id="applicants-modal-project-title">Project Title</p>
+                </div>
+                <button class="modal-close" onclick="app.closeModal('applicants-modal')"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body" id="applicants-modal-body" style="max-height: 70vh;">
+                <!-- Populated dynamically via JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 6. STATUS UPDATE MODAL (Section 23) -->
+    <div class="modal-overlay" id="status-modal">
+        <div class="modal" style="max-width: 440px;">
+            <div class="modal-header">
+                <h3 style="font-size: 1.25rem;">Update Project Status</h3>
+                <button class="modal-close" onclick="app.closeModal('status-modal')"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="status-form" onsubmit="app.handleUpdateStatus(event)">
+                    <input type="hidden" id="status-project-id">
+                    <div class="form-group">
+                        <label class="form-label">Current Status</label>
+                        <input type="text" class="form-control" id="status-current-display" readonly style="opacity: 0.7;">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Next Target Status</label>
+                        <select class="form-control" id="status-next-select" required>
+                            <!-- Filtered dynamically for only valid transitions -->
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">
+                        <i class="fa-solid fa-check"></i> Confirm Status Transition
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 7. RATING AND REVIEW MODAL (Section 19) -->
+    <div class="modal-overlay" id="review-modal">
+        <div class="modal" style="max-width: 480px;">
+            <div class="modal-header">
+                <div>
+                    <h3 style="font-size: 1.25rem;">Leave a Review</h3>
+                    <p style="font-size: 0.8rem; color: var(--text-muted);" id="review-modal-target-name">Reviewee</p>
+                </div>
+                <button class="modal-close" onclick="app.closeModal('review-modal')"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="review-form" onsubmit="app.handleSubmitReview(event)">
+                    <input type="hidden" id="review-project-id">
+                    <input type="hidden" id="review-reviewee-id">
+                    <input type="hidden" id="review-rating-val" value="5">
+
+                    <div class="form-group" style="text-align: center; margin: 1rem 0;">
+                        <label class="form-label" style="margin-bottom: 0.75rem;">Your Rating (1–5 Stars)</label>
+                        <div class="star-rating" id="review-stars-container" style="justify-content: center;">
+                            <i class="fa-solid fa-star star active" data-rating="1"></i>
+                            <i class="fa-solid fa-star star active" data-rating="2"></i>
+                            <i class="fa-solid fa-star star active" data-rating="3"></i>
+                            <i class="fa-solid fa-star star active" data-rating="4"></i>
+                            <i class="fa-solid fa-star star active" data-rating="5"></i>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Review Comment</label>
+                        <textarea class="form-control" id="review-comment" rows="3" required placeholder="Share your experience working on this project..."></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">
+                        <i class="fa-solid fa-star"></i> Submit Review
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 8. PROJECT MESSAGING MODAL (Section 21) -->
+    <div class="modal-overlay" id="messages-modal">
+        <div class="modal" style="max-width: 680px; height: 600px;">
+            <div class="modal-header">
+                <div>
+                    <h3 style="font-size: 1.15rem;" id="chat-modal-title">Project Collaboration Chat</h3>
+                    <p style="font-size: 0.78rem; color: var(--text-muted);" id="chat-modal-subtitle">Direct message between client and assigned freelancer</p>
+                </div>
+                <button class="modal-close" onclick="app.closeModal('messages-modal')"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="chat-window" style="border: none; border-radius: 0; flex: 1;">
+                <div class="chat-body" id="chat-messages-container">
+                    <!-- Populated dynamically via REST API -->
+                </div>
+                <div class="chat-footer">
+                    <input type="text" class="form-control" id="chat-input" placeholder="Type your message..." onkeydown="if(event.key==='Enter') app.sendChatMessage()">
+                    <button class="btn btn-primary" onclick="app.sendChatMessage()"><i class="fa-solid fa-paper-plane"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications Container (Section 29) -->
+    <div id="toast-container"></div>
+
+    <!-- Application Script -->
+    <script src="js/app.js"></script>
+</body>
+</html>

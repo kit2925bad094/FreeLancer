@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "outputDirectory": "src/main/resources/static",
+  "cleanUrls": true,
+  "rewrites": [
+    {
+      "source": "/styles.css",
+      "destination": "/css/styles.css"
+    },
+    {
+      "source": "/app.js",
+      "destination": "/js/app.js"
+    },
+    {
+      "source": "/((?!api|css|js|favicon.ico|.*\\..*).*)",
+      "destination": "/index.html"
+    }
+  ]
+}
