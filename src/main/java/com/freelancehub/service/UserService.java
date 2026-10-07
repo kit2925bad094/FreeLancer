@@ -2,6 +2,7 @@ package com.freelancehub.service;
 
 import com.freelancehub.dto.AuthRequest;
 import com.freelancehub.dto.AuthResponse;
+import com.freelancehub.dto.ProfileUpdateRequest;
 import com.freelancehub.dto.RegisterRequest;
 import com.freelancehub.exception.BadRequestException;
 import com.freelancehub.exception.ResourceNotFoundException;
@@ -145,6 +146,84 @@ public class UserService {
     public User getUserById(Long id) {
         return userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+    }
+
+    @Transactional
+    public AuthResponse updateProfile(Long userId, ProfileUpdateRequest request) {
+        User user = getUserById(userId);
+        if (!PasswordUtil.verify(request.getCurrentPassword(), user.getPassword())) {
+            throw new UnauthorizedException("Current password is incorrect.");
+        }
+        String email = request.getEmail().trim().toLowerCase();
+        Optional<User> emailOwner = userRepository.findByEmail(email);
+        if (emailOwner.isPresent() && !emailOwner.get().getId().equals(userId)) {
+            throw new BadRequestException("Email is already registered: " + request.getEmail());
+        }
+        if (!"FREELANCER".equalsIgnoreCase(user.getRole()) && !"CLIENT".equalsIgnoreCase(user.getRole())) {
+            throw new BadRequestException("Only freelancer and client profiles can be edited.");
+        }
+
+        String name = request.getName().trim();
+        String profileImage = request.getProfileImage() == null || request.getProfileImage().isBlank()
+                ? null : request.getProfileImage().trim();
+        userRepository.updateProfile(userId, name, email, profileImage);
+
+        Long profileId;
+        if ("FREELANCER".equalsIgnoreCase(user.getRole())) {
+            FreelancerProfile profile = freelancerRepository.findByUserId(userId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Freelancer profile not found for user: " + userId));
+            profile.setHeadline(request.getHeadline());
+            profile.setBio(request.getBio());
+            profile.setEducation(request.getEducation());
+            profile.setExperience(request.getExperience());
+            profile.setLocation(request.getLocation());
+            profile.setGithubUrl(request.getGithubUrl());
+            profile.setLinkedinUrl(request.getLinkedinUrl());
+            profile.setPortfolioUrl(request.getPortfolioUrl());
+            profile.setHourlyRate(request.getHourlyRate());
+            freelancerRepository.update(profile);
+
+            ArrayList<String> skillNames = request.getSkillNames() != null ? request.getSkillNames() : new ArrayList<>();
+            HashSet<String> uniqueSkills = new HashSet<>();
+            for (String skillName : skillNames) {
+                if (skillName != null && !skillName.isBlank()) {
+                    uniqueSkills.add(skillName.trim());
+                }
+            }
+            skillRepository.removeSkillsFromFreelancer(profile.getId());
+            for (String skillName : uniqueSkills) {
+                Optional<Skill> existingSkill = skillRepository.findByName(skillName);
+                Long skillId = existingSkill.isPresent()
+                        ? existingSkill.get().getId()
+                        : skillRepository.save(new Skill(null, skillName));
+                skillRepository.addSkillToFreelancer(profile.getId(), skillId);
+            }
+            profileId = profile.getId();
+        } else {
+            ClientProfile profile = clientProfileRepository.findByUserId(userId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Client profile not found for user: " + userId));
+            profile.setCompanyName(request.getCompanyName() == null || request.getCompanyName().isBlank()
+                    ? name : request.getCompanyName().trim());
+            profile.setCompanyDescription(request.getCompanyDescription());
+            profile.setWebsite(request.getWebsite());
+            profile.setLocation(request.getLocation());
+            clientProfileRepository.update(profile);
+            profileId = profile.getId();
+        }
+
+        return new AuthResponse(UUID.randomUUID().toString(), userId, name, email, user.getRole(), profileImage, profileId);
+    }
+
+    @Transactional
+    public void deleteProfile(Long userId, String currentPassword) {
+        User user = getUserById(userId);
+        if (!"FREELANCER".equalsIgnoreCase(user.getRole()) && !"CLIENT".equalsIgnoreCase(user.getRole())) {
+            throw new BadRequestException("Only freelancer and client profiles can be deleted.");
+        }
+        if (!PasswordUtil.verify(currentPassword, user.getPassword())) {
+            throw new UnauthorizedException("Current password is incorrect.");
+        }
+        userRepository.deleteById(userId);
     }
 
     public void updateUserStatus(Long id, String status) {

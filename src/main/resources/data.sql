@@ -1,9 +1,8 @@
 -- ========================================================
 -- FreelanceHub Initial Seed Data
 -- Database: freelancer_management
--- Only skills catalog and default admin are provided.
--- Freelancers, clients, and projects are empty by default
--- and must be registered/created by users themselves.
+-- Only the skills catalog is pre-seeded.
+-- Users, freelancers, clients, and projects are created by users.
 -- ========================================================
 
 -- Insert Skills Catalog
@@ -23,10 +22,6 @@ INSERT IGNORE INTO skills (id, name) VALUES
 (13, 'AWS'),
 (14, 'TypeScript'),
 (15, 'Next.js');
-
--- System Administrator Account (Password: admin123)
-INSERT IGNORE INTO users (id, name, email, password, role, profile_image, status) VALUES
-(1, 'System Administrator', 'admin@freelancehub.com', '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9', 'ADMIN', NULL, 'ACTIVE');
 
 UPDATE users
 SET profile_image = NULL

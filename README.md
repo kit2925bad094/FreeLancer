@@ -14,6 +14,7 @@
   - `HashMap` for dashboard KPI aggregation, status frequency mappings, category budgeting analytics, and applicant scorecards.
 - **Modern SaaS Glassmorphism UI**: Built with responsive Vanilla CSS3, custom design tokens, dark/light theme persistence, dynamic project filtering, visual lifecycle stepper, and interactive Chart.js dashboards.
 - **Role-Based Workspaces**: Tailored experiences for **Freelancers**, **Clients**, and **Admins**, complete with a 1-click Demo Account Switcher in the top navigation bar.
+- **Profile Management**: Freelancers and clients can edit their account and role-specific profile details or permanently delete their account from their profile page, with current-password confirmation for both actions.
 - **Production-Ready Resilience**: Includes global REST exception handling (`GlobalExceptionHandler`), SHA-256 salted password hashing (`PasswordUtil`), database constraints against duplicate applications, and automated integration test suites.
 
 ---
@@ -86,87 +87,94 @@ The database schema is defined in `src/main/resources/schema.sql` and includes 1
 ```mermaid
 erDiagram
     USERS ||--o| FREELANCER_PROFILES : "has"
-    USERS ||--o| CLIENT_PROFILES : "has"
-    USERS ||--o{ NOTIFICATIONS : "receives"
-    
-    FREELANCER_PROFILES ||--o{ FREELANCER_SKILLS : "possesses"
-    SKILLS ||--o{ FREELANCER_SKILLS : "categorizes"
-    
-    CLIENT_PROFILES ||--o{ PROJECTS : "posts"
-    PROJECTS ||--o{ PROJECT_SKILLS : "requires"
-    SKILLS ||--o{ PROJECT_SKILLS : "categorizes"
-    
-    PROJECTS ||--o{ PROJECT_APPLICATIONS : "receives"
-    FREELANCER_PROFILES ||--o{ PROJECT_APPLICATIONS : "submits"
-    
-    PROJECTS ||--o| PROJECT_ASSIGNMENTS : "assigned_to"
-    FREELANCER_PROFILES ||--o{ PROJECT_ASSIGNMENTS : "works_on"
-    
-    PROJECTS ||--o{ PROJECT_STATUS_HISTORY : "tracks"
-    PROJECTS ||--o{ MESSAGES : "contains"
-    PROJECTS ||--o{ REVIEWS : "generates"
-    PROJECTS ||--o{ PAYMENTS : "bills"
+  USERS ||--o| CLIENT_PROFILES : "has"
+  USERS ||--o{ NOTIFICATIONS : "receives"
+  FREELANCER_PROFILES ||--o{ FREELANCER_SKILLS : "possesses"
+  SKILLS ||--o{ FREELANCER_SKILLS : "categorizes"
+  CLIENT_PROFILES ||--o{ PROJECTS : "posts"
+  PROJECTS ||--o{ PROJECT_SKILLS : "requires"
+  SKILLS ||--o{ PROJECT_SKILLS : "categorizes"
+  PROJECTS ||--o{ PROJECT_APPLICATIONS : "receives"
+  FREELANCER_PROFILES ||--o{ PROJECT_APPLICATIONS : "submits"
+  PROJECTS ||--o| PROJECT_ASSIGNMENTS : "assigned_to"
+  FREELANCER_PROFILES ||--o{ PROJECT_ASSIGNMENTS : "works_on"
+  PROJECTS ||--o{ PROJECT_STATUS_HISTORY : "tracks"
+  PROJECTS ||--o{ MESSAGES : "contains"
+  PROJECTS ||--o{ REVIEWS : "generates"
+  PROJECTS ||--o{ PAYMENTS : "bills"
 ```
 
 ### Key Relational Safeguards
-- **Duplicate Application Prevention**: `UNIQUE (project_id, freelancer_id)` constraint on `project_applications` guarantees that race conditions or double submissions are rejected at the database level.
-- **Lifecycle Integrity**: `project_status_history` audits every phase transition with timestamps and actor IDs (`DRAFT` → `OPEN` → `ASSIGNED` → `IN_PROGRESS` → `UNDER_REVIEW` → `COMPLETED` → `CANCELLED`).
-- **Cascade Deletes**: Foreign key dependencies automatically maintain referential integrity when test projects or profiles are removed.
+- **Duplicate Application Prevention**: A unique project/freelancer key prevents duplicate applications.
+- **Lifecycle Integrity**: `project_status_history` records project status transitions.
+- **Cascade Deletes**: Foreign keys maintain referential integrity when related records are deleted.
 
----
+## Getting Started
 
-## 🚀 Getting Started
+### Local Run
 
-### 1. Prerequisites
-- **Java Development Kit (JDK) 17** or higher
-- **MySQL Server 8.0+** running on `localhost:3306`
-- **Apache Maven 3.9+** (or use the included `mvn.cmd` wrapper script)
+Prerequisites: JDK 17+, Maven (or the included `mvn.cmd`), and MySQL 8+.
 
-### 2. Database Configuration
-Open MySQL command-line or MySQL Workbench and create the database:
-```sql
-CREATE DATABASE IF NOT EXISTS freelancer_management;
-```
+Set the local database variables in PowerShell, then start the server. The schema and skills catalog are initialized on startup; SQL initialization failures stop the application.
 
-Ensure your credentials in `src/main/resources/application.properties` match your local MySQL configuration:
-```properties
-spring.datasource.url=jdbc:mysql://localhost:3306/freelancer_management?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-spring.datasource.username=root
-spring.datasource.password=${DB_PASSWORD:}
-spring.sql.init.mode=always
-spring.sql.init.schema-locations=classpath:schema.sql
-spring.sql.init.data-locations=classpath:data.sql
-```
-*(Note: Schema DDL and Seed Data DML execute automatically on server startup)*
-
-Set `DB_PASSWORD` in your environment to your local MySQL password before starting the application.
-
-### 3. Run the Backend Server
-
-#### Option A: Running with Maven
 ```powershell
+$env:MYSQLHOST = "localhost"
+$env:MYSQLPORT = "3306"
+$env:MYSQLDATABASE = "freelancer_management"
+$env:MYSQLUSER = "root"
+$env:MYSQLPASSWORD = "your-local-mysql-password"
 .\mvn.cmd spring-boot:run
 ```
 
-#### Option B: Running the Pre-Built Executable JAR
-```powershell
-java -jar target/freelancehub-1.0.0.jar
-```
+The app listens on `PORT` when set, or `8080` otherwise. Open `http://localhost:8080/`. Check the API with `Invoke-RestMethod http://localhost:8080/api/health`.
 
-The server will start on port `8080`.
+Run integration tests with the same `MYSQL*` variables configured:
 
-### 4. Access the Frontend
-Open any web browser and navigate to:
-```
-http://localhost:8080/
-```
-
-### 5. Running Automated Integration Tests
-The project includes a full unit and integration test suite in `src/test/java/com/freelancehub/FreelanceHubApplicationTests.java`:
 ```powershell
 .\mvn.cmd test
 ```
-All tests verify JDBC queries, duplicate application validation, status state machine progressions, and skill matching arithmetic.
+
+## Deployment: Railway Backend + Vercel Frontend
+
+The backend uses Spring Boot and JDBC with Railway MySQL. Vercel serves only the existing static frontend; it does not host API functions or replace the Java backend.
+
+### Railway Backend
+
+1. In Railway, create a project and add a **MySQL** service.
+2. Add a service from the GitHub repository `kit2925bad094/FreeLancer`, using the repository root.
+3. Set the app service build command to `mvn -B clean package -DskipTests` and the start command to `java -jar target/freelancehub-1.0.0.jar`.
+4. In the app service's **Variables** tab, add these variables. Replace `MySQL` in the references if your database service has a different name:
+
+  ```text
+  MYSQLHOST=${{MySQL.MYSQLHOST}}
+  MYSQLPORT=${{MySQL.MYSQLPORT}}
+  MYSQLDATABASE=${{MySQL.MYSQLDATABASE}}
+  MYSQLUSER=${{MySQL.MYSQLUSER}}
+  MYSQLPASSWORD=${{MySQL.MYSQLPASSWORD}}
+  SPRING_SQL_INIT_MODE=always
+  ```
+
+  Railway supplies `PORT`; do not set it to a fixed value. Do not use a public MySQL hostname for app-to-database traffic; use Railway's private service references.
+5. Deploy the service, then enable **Public Networking** and generate a Railway domain. The resulting HTTPS origin is your backend URL.
+6. Verify the deployed API (substitute the generated domain):
+
+  ```powershell
+  $backend = "https://<railway-domain>"
+  Invoke-RestMethod "$backend/api/health"
+  Invoke-RestMethod "$backend/api/skills"
+  Invoke-RestMethod "$backend/api/projects?status=OPEN"
+  ```
+
+  `/api/health` returns `{"status":"UP"}`. Skills are seeded by `data.sql`. Projects are never fabricated or seeded; the projects response contains actual MySQL rows and will be an empty list until an open project is created.
+
+### Vercel Frontend
+
+1. Open the Vercel project for `freelancer-angr` and go to **Settings → Environment Variables**.
+2. Add `VITE_API_BASE_URL` with the Railway HTTPS origin only, for example `https://your-service.up.railway.app` (no trailing slash and no `/api`). Select **Production**; also select **Preview** if preview deployments should use the same backend.
+3. Save the variable and redeploy. Vercel runs `npm run build`, which generates `dist/runtime-config.js`; the single frontend API client then calls `<VITE_API_BASE_URL>/api/...`.
+4. Open `https://freelancer-angr.vercel.app`, then check the browser Network panel. `/api/skills` and `/api/projects?status=OPEN` must be sent to the Railway origin and return JSON from MySQL.
+
+The Vercel environment variable is build-time configuration for this plain JavaScript frontend; it is not a Vite application. No Vercel API routes are created.
 
 ---
 
@@ -190,10 +198,7 @@ The application starts in a **clean, production-ready state** with **0 dummy pro
   - Navigating to **Dashboard** without signing in redirects to Sign In.
 
 ### 3. Administrative Access
-- **Platform Administrator**:
-  - **Email**: `admin@freelancehub.com`
-  - **Password**: `admin123`
-  - Provides access to platform-wide telemetry, user moderation, status distribution charts, and category budget analytics.
+- No default administrator account is seeded. To provision one, create the account through registration, then promote that account in the Railway MySQL console with `UPDATE users SET role = 'ADMIN' WHERE email = 'your-admin-email';`.
 
 ---
 

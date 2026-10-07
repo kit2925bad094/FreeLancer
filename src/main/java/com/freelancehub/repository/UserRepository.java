@@ -86,6 +86,15 @@ public class UserRepository {
         return jdbcTemplate.update(sql, profileImage, id);
     }
 
+    public int updateProfile(Long id, String name, String email, String profileImage) {
+        String sql = "UPDATE users SET name = ?, email = ?, profile_image = ? WHERE id = ?";
+        return jdbcTemplate.update(sql, name, email, profileImage, id);
+    }
+
+    public int deleteById(Long id) {
+        return jdbcTemplate.update("DELETE FROM users WHERE id = ?", id);
+    }
+
     public ArrayList<User> findAll() {
         String sql = "SELECT * FROM users ORDER BY created_at DESC";
         List<User> list = jdbcTemplate.query(sql, userRowMapper);

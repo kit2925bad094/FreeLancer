@@ -10,7 +10,6 @@ import java.util.ArrayList;
 
 @RestController
 @RequestMapping("/api/freelancers")
-@CrossOrigin(origins = "*")
 public class FreelancerController {
 
     private final FreelancerService freelancerService;
