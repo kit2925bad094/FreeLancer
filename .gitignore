@@ -1,26 +1,9 @@
-# Java / Maven
 target/
-*.class
-
-# VS Code
+dist/
+node_modules/
 .vscode/
-
-# Environment / secrets
+.idea/
 .env
 .env.*
 !.env.example
-
-# Node
-node_modules/
-dist/
-
-# Logs
 *.log
-
-# OS
-.DS_Store
-Thumbs.db
-
-# IDE
-.idea/
-*.iml

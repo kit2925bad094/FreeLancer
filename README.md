@@ -14,7 +14,6 @@
   - `HashMap` for dashboard KPI aggregation, status frequency mappings, category budgeting analytics, and applicant scorecards.
 - **Modern SaaS Glassmorphism UI**: Built with responsive Vanilla CSS3, custom design tokens, dark/light theme persistence, dynamic project filtering, visual lifecycle stepper, and interactive Chart.js dashboards.
 - **Role-Based Workspaces**: Tailored experiences for **Freelancers**, **Clients**, and **Admins**, complete with a 1-click Demo Account Switcher in the top navigation bar.
-- **Profile Management**: Freelancers and clients can edit their account and role-specific profile details or permanently delete their account from their profile page, with current-password confirmation for both actions.
 - **Production-Ready Resilience**: Includes global REST exception handling (`GlobalExceptionHandler`), SHA-256 salted password hashing (`PasswordUtil`), database constraints against duplicate applications, and automated integration test suites.
 
 ---

@@ -1540,32 +1540,10 @@ class FreelanceHubApp {
         container.innerHTML = '<div style="text-align: center; padding: 4rem;"><i class="fa-solid fa-spinner fa-spin fa-2x"></i></div>';
 
         try {
-            let role;
-            let profileResponse;
-            const isOwnProfile = this.currentUser && String(this.currentUser.userId) === String(userId);
-
-            if (isOwnProfile) {
-                role = this.currentUser.role;
-                profileResponse = await this.fetchApi(
-                    role === 'FREELANCER' ? `/freelancers/user/${userId}` : `/clients/user/${userId}`,
-                    'GET'
-                );
-            } else {
-                profileResponse = await this.fetchApi(`/freelancers/user/${userId}`, 'GET');
-                if (profileResponse.success && profileResponse.data) {
-                    role = 'FREELANCER';
-                } else {
-                    profileResponse = await this.fetchApi(`/clients/user/${userId}`, 'GET');
-                    role = 'CLIENT';
-                }
-            }
-
-            if (!profileResponse.success || !profileResponse.data) {
-                throw new Error(profileResponse.message || 'Profile not found.');
-            }
-
-            if (profileResponse.success && profileResponse.data && role === 'FREELANCER') {
-                const f = profileResponse.data;
+            // Get user by id
+            const flRes = await this.fetchApi(`/freelancers/user/${userId}`, 'GET');
+            if (flRes.success && flRes.data) {
+                const f = flRes.data;
                 const skillsHtml = (f.skills || []).map(s => `<span class="skill-pill" style="padding: 0.35rem 0.85rem; font-size: 0.85rem;">${this.escapeHtml(s.name)}</span>`).join('');
                 const profileImage = f.profileImage
                     ? `<img src="${this.escapeHtml(f.profileImage)}" alt="" style="width: 110px; height: 110px; border-radius: 50%; object-fit: cover; border: 4px solid var(--primary); box-shadow: var(--shadow-glow);">`
@@ -1592,7 +1570,6 @@ class FreelanceHubApp {
 
                 container.innerHTML = `
                     <div class="card" style="padding: 2.5rem; margin-bottom: 2rem;">
-                        ${isOwnProfile ? this.profileManagementActions() : ''}
                         <div style="display: flex; gap: 2rem; align-items: center; flex-wrap: wrap;">
                             ${profileImage}
                             <div>
@@ -1626,180 +1603,15 @@ class FreelanceHubApp {
                             </div>
                         </div>
                     </div>
-                    ${isOwnProfile ? this.profileEditForm(f, 'FREELANCER') : ''}
 
                     <div class="card" style="padding: 2rem;">
                         <h3 style="font-size: 1.15rem; margin-bottom: 1.25rem;"><i class="fa-solid fa-star" style="color: #fbbf24;"></i> Client Testimonials</h3>
                         ${reviewsHtml}
                     </div>
                 `;
-            } else if (profileResponse.success && profileResponse.data && role === 'CLIENT') {
-                const client = profileResponse.data;
-                const image = client.profileImage
-                    ? `<img src="${this.escapeHtml(client.profileImage)}" alt="" style="width: 110px; height: 110px; border-radius: 50%; object-fit: cover; border: 4px solid var(--primary);">`
-                    : '';
-                container.innerHTML = `
-                    <div class="card" style="padding: 2.5rem; margin-bottom: 2rem;">
-                        ${isOwnProfile ? this.profileManagementActions() : ''}
-                        <div style="display: flex; gap: 2rem; align-items: center; flex-wrap: wrap;">
-                            ${image}
-                            <div>
-                                <h1 style="font-size: 2rem; margin-bottom: 0.25rem;">${this.escapeHtml(client.name)}</h1>
-                                <p style="font-size: 1.1rem; color: var(--primary); font-weight: 600; margin-bottom: 0.5rem;">${this.escapeHtml(client.companyName)}</p>
-                                <div style="display: flex; gap: 1.5rem; font-size: 0.88rem; color: var(--text-muted); flex-wrap: wrap;">
-                                    <span><i class="fa-solid fa-location-dot"></i> ${this.escapeHtml(client.location || 'Remote')}</span>
-                                    ${client.website ? `<a href="${this.escapeHtml(client.website)}" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-globe"></i> Website</a>` : ''}
-                                </div>
-                            </div>
-                        </div>
-                        <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color);">
-                            <h3 style="font-size: 1.15rem; margin-bottom: 0.75rem;">About the company</h3>
-                            <p style="font-size: 0.95rem; line-height: 1.7; color: var(--text-secondary);">${this.escapeHtml(client.companyDescription || 'No company description provided.')}</p>
-                        </div>
-                    </div>
-                    ${isOwnProfile ? this.profileEditForm(client, 'CLIENT') : ''}
-                `;
             }
         } catch (err) {
             container.innerHTML = `<div style="color: var(--danger); text-align: center;">Error loading profile: ${err.message}</div>`;
-        }
-    }
-
-    profileManagementActions() {
-        return `
-            <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
-                <button class="btn btn-outline btn-sm" type="button" onclick="app.toggleProfileEdit()">
-                    <i class="fa-solid fa-pen"></i> Edit Profile
-                </button>
-                <button class="btn btn-outline btn-sm" type="button" style="color: var(--danger); border-color: var(--danger);" onclick="app.deleteMyProfile()">
-                    <i class="fa-solid fa-trash"></i> Delete Profile
-                </button>
-            </div>
-        `;
-    }
-
-    profileEditForm(profile, role) {
-        const field = (label, name, value, type = 'text', options = '') => `
-            <div class="form-group">
-                <label class="form-label" for="profile-edit-${name}">${label}</label>
-                <input class="form-control" id="profile-edit-${name}" name="${name}" type="${type}" value="${this.escapeHtml(value || '')}" ${options}>
-            </div>
-        `;
-        const accountFields = `
-            ${field('Current Password (required to save changes)', 'currentPassword', '', 'password', 'required autocomplete="current-password"')}
-            <div class="form-row">
-                ${field('Name', 'name', profile.name, 'text', 'required maxlength="100"')}
-                ${field('Email', 'email', profile.email, 'email', 'required maxlength="150"')}
-            </div>
-            ${field('Profile Image URL', 'profileImage', profile.profileImage, 'url')}
-        `;
-        const roleFields = role === 'FREELANCER' ? `
-            ${field('Professional Headline', 'headline', profile.headline)}
-            <div class="form-row">
-                ${field('Hourly Rate (₹)', 'hourlyRate', profile.hourlyRate, 'number', 'min="0" step="0.01"')}
-                ${field('Location', 'location', profile.location)}
-            </div>
-            <div class="form-row">
-                ${field('Education', 'education', profile.education)}
-                ${field('Experience', 'experience', profile.experience)}
-            </div>
-            <div class="form-group">
-                <label class="form-label" for="profile-edit-bio">Bio</label>
-                <textarea class="form-control" id="profile-edit-bio" name="bio" rows="4">${this.escapeHtml(profile.bio || '')}</textarea>
-            </div>
-            ${field('Skills (comma separated)', 'skillNames', (profile.skills || []).map(skill => skill.name).join(', '))}
-            <div class="form-row">
-                ${field('GitHub URL', 'githubUrl', profile.githubUrl, 'url')}
-                ${field('LinkedIn URL', 'linkedinUrl', profile.linkedinUrl, 'url')}
-            </div>
-            ${field('Portfolio URL', 'portfolioUrl', profile.portfolioUrl, 'url')}
-        ` : `
-            ${field('Company Name', 'companyName', profile.companyName, 'text', 'required maxlength="150"')}
-            <div class="form-group">
-                <label class="form-label" for="profile-edit-companyDescription">Company Description</label>
-                <textarea class="form-control" id="profile-edit-companyDescription" name="companyDescription" rows="4">${this.escapeHtml(profile.companyDescription || '')}</textarea>
-            </div>
-            <div class="form-row">
-                ${field('Website', 'website', profile.website, 'url')}
-                ${field('Location', 'location', profile.location)}
-            </div>
-        `;
-
-        return `
-            <div class="card" id="profile-edit-panel" style="padding: 2rem; margin-bottom: 2rem; display: none;">
-                <h2 style="font-size: 1.35rem; margin-bottom: 1.25rem;">Edit ${role === 'FREELANCER' ? 'Freelancer' : 'Client'} Profile</h2>
-                <form onsubmit="app.saveMyProfile(event, '${role}')">
-                    ${accountFields}
-                    ${roleFields}
-                    <div style="display: flex; gap: 0.75rem; justify-content: flex-end; flex-wrap: wrap;">
-                        <button type="button" class="btn btn-outline" onclick="app.toggleProfileEdit()">Cancel</button>
-                        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Save Changes</button>
-                    </div>
-                </form>
-            </div>
-        `;
-    }
-
-    toggleProfileEdit() {
-        const panel = document.getElementById('profile-edit-panel');
-        if (panel) {
-            panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
-            if (panel.style.display === 'block') panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-    }
-
-    async saveMyProfile(event, role) {
-        event.preventDefault();
-        if (!this.currentUser) return;
-        const form = event.currentTarget;
-        const formData = new FormData(form);
-        const payload = Object.fromEntries(formData.entries());
-
-        if (role === 'FREELANCER') {
-            payload.hourlyRate = payload.hourlyRate ? Number(payload.hourlyRate) : null;
-            payload.skillNames = (payload.skillNames || '').split(',').map(skill => skill.trim()).filter(Boolean);
-        }
-
-        try {
-            const res = await this.fetchApi(`/auth/profile/${this.currentUser.userId}`, 'PUT', payload);
-            if (!res.success || !res.data) {
-                this.showToast(res.message || 'Profile could not be updated.', 'error');
-                return;
-            }
-            this.currentUser = res.data;
-            localStorage.setItem('fh_user', JSON.stringify(res.data));
-            this.updateAuthUI();
-            this.showToast('Profile updated successfully.', 'success');
-            this.loadUserProfile(this.currentUser.userId);
-        } catch (err) {
-            this.showToast(err.message || 'Error updating profile.', 'error');
-        }
-    }
-
-    async deleteMyProfile() {
-        if (!this.currentUser) return;
-        const confirmed = window.confirm('Permanently delete your profile and account? Related profile data and projects/applications may also be removed. This action cannot be undone.');
-        if (!confirmed) return;
-        const currentPassword = window.prompt('Enter your current password to confirm account deletion.');
-        if (currentPassword === null) return;
-        if (!currentPassword.trim()) {
-            this.showToast('Current password is required to delete your account.', 'warning');
-            return;
-        }
-
-        try {
-            const res = await this.fetchApi(`/auth/profile/${this.currentUser.userId}`, 'DELETE', { currentPassword });
-            if (!res.success) {
-                this.showToast(res.message || 'Account could not be deleted.', 'error');
-                return;
-            }
-            localStorage.removeItem('fh_user');
-            this.currentUser = null;
-            this.updateAuthUI();
-            this.showToast('Your account has been deleted.', 'success');
-            this.navigate('home');
-        } catch (err) {
-            this.showToast(err.message || 'Error deleting account.', 'error');
         }
     }
 
@@ -2153,7 +1965,7 @@ class FreelanceHubApp {
             options.headers['Authorization'] = 'Bearer ' + this.currentUser.token;
         }
 
-        if (body && ['POST', 'PUT', 'DELETE'].includes(method)) {
+        if (body && (method === 'POST' || method === 'PUT')) {
             options.body = JSON.stringify(body);
         }
 
